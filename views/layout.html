@@ -19,24 +19,93 @@
   <link rel="icon" href="/img/mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    // Runs before first paint. The gauge intro plays once per browser session,
+    // and never for visitors who prefer reduced motion.
+    (function (h) {
+      h.classList.remove('no-js');
+      try {
+        if (!sessionStorage.getItem('tn-intro') && !matchMedia('(prefers-reduced-motion: reduce)').matches) h.classList.add('tn-loading');
+        sessionStorage.setItem('tn-intro', '1');
+      } catch (e) {}
+    })(document.documentElement);
+  </script>
+  <style>
+    /* Gauge loader. Critical CSS: inlined so it paints before stylesheets load.
+       Colours mirror tokens.css (ink-950, ink-600, steel-400, bone-100, redline-600). */
+    .tn-loader { display: none; }
+    .tn-loading .tn-loader, .tn-nav .tn-loader {
+      position: fixed; inset: 0; z-index: 100; display: grid; place-content: center; justify-items: center; gap: 18px;
+      background: #0a0b0d; transition: opacity .22s ease-out;
+    }
+    .tn-loading .tn-loader { animation: tn-failsafe 0s 4s forwards; }
+    .tn-nav .tn-loader { animation: tn-fade-in .16s ease-out both; }
+    .tn-out .tn-loader { opacity: 0; pointer-events: none; }
+    @keyframes tn-failsafe { to { visibility: hidden; opacity: 0; } }
+    @keyframes tn-fade-in { from { opacity: 0; } }
+    .tn-loader__gauge { width: min(46vw, 180px); height: auto; overflow: visible; }
+    .tn-loader__track { fill: none; stroke: #2e333b; stroke-width: 9; }
+    .tn-loader__fill { fill: none; stroke: #e03c0a; stroke-width: 9; }
+    .tn-loader__gauge line { stroke: #8b929d; stroke-width: 2; }
+    .tn-loader__gauge line.r { stroke: #e03c0a; }
+    .tn-loader__needle { transform-origin: 100px 100px; transform: rotate(135deg); }
+    .tn-loader__needle line { stroke: #eeeae2; stroke-width: 3; stroke-linecap: round; }
+    .tn-loader__hub { fill: #191c21; stroke: #e03c0a; stroke-width: 2; }
+    .tn-loader__word { font: 800 13px/1 "Archivo", "Arial Narrow", system-ui, sans-serif; font-stretch: 125%; letter-spacing: .14em; color: #eeeae2; }
+    .tn-loader__word b { color: #e03c0a; font-weight: 800; }
+  </style>
   {{{seo.preload}}}
-  <link rel="stylesheet" href="/css/tokens.css">
-  <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/components.css">
-  <link rel="stylesheet" href="/css/site.css">
-  <script>document.documentElement.classList.remove('no-js')</script>
+  {{{head_assets}}}
   <script type="application/ld+json">{{{jsonld}}}</script>
 </head>
 <body class="page-{{page.nav}}">
+  {{{loader}}}
+  <script>
+    // Drives the loader's red fill and needle. Fill eases toward ~80% while the
+    // page loads, then snaps to redline and fades out. site.js reuses this
+    // (window.tnGauge) for slow page-to-page navigation.
+    (function () {
+      var h = document.documentElement, L = document.querySelector('.tn-loader');
+      if (!L) return;
+      var fill = L.querySelector('.tn-loader__fill'), needle = L.querySelector('.tn-loader__needle');
+      var raf = 0, t0 = 0, p = 0, done = false;
+      fill.setAttribute('stroke-dasharray', '100 100');
+      function draw(v) { p = v; fill.setAttribute('stroke-dashoffset', 100 - v * 100); needle.style.transform = 'rotate(' + (135 + 270 * v) + 'deg)'; }
+      function tick(t) { if (!t0) t0 = t; draw(0.82 * (1 - Math.exp(-(t - t0) / 700))); raf = requestAnimationFrame(tick); }
+      function start() { done = false; t0 = 0; h.classList.remove('tn-out'); draw(0); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); }
+      function finish() {
+        if (done) return; done = true; cancelAnimationFrame(raf);
+        var from = p, s = performance.now();
+        (function step(t) {
+          var k = Math.min(1, (t - s) / 260);
+          draw(from + (1 - from) * (1 - Math.pow(1 - k, 3)));
+          if (k < 1) return requestAnimationFrame(step);
+          h.classList.add('tn-out');
+          setTimeout(function () { h.classList.remove('tn-loading', 'tn-nav', 'tn-out'); }, 240);
+        })(s);
+      }
+      window.tnGauge = { start: start, finish: finish };
+      draw(0);
+      if (!h.classList.contains('tn-loading')) return;
+      start();
+      var began = performance.now();
+      var ready = new Promise(function (r) { document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', r) : r(); })
+        .then(function () {
+          var waits = [document.fonts ? document.fonts.ready : null];
+          var hero = document.querySelector('.hero__photo img');
+          if (hero && hero.decode) waits.push(hero.decode().catch(function () {}));
+          return Promise.all(waits);
+        });
+      Promise.race([ready, new Promise(function (r) { setTimeout(r, 3000); })])
+        .then(function () { setTimeout(finish, Math.max(0, 500 - (performance.now() - began))); });
+    })();
+  </script>
   <a class="skip-link" href="#main">Skip to content</a>
   {{> header}}
   <main id="main">
     {{{body}}}
   </main>
   {{> footer}}
-  <script src="/js/site.js" defer></script>
+  <script src="{{site_js}}" defer></script>
 </body>
 </html>

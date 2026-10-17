@@ -38,6 +38,28 @@
     reveals.forEach((el, i) => { el.style.transitionDelay = `${(i % 6) * 50}ms`; io.observe(el); });
   } else reveals.forEach((el) => el.classList.add('is-in'));
 
+  // Gauge loader on page changes: appears only if the next page hasn't arrived
+  // within 200ms, so cached pages never flash it.
+  if (window.tnGauge) {
+    let timer = 0;
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest && e.target.closest('a[href]');
+      if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if ((a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+      const u = new URL(a.href, location.href);
+      if (u.origin !== location.origin || u.pathname.startsWith('/admin')) return;
+      if (u.pathname === location.pathname && u.search === location.search) return; // same-page anchor
+      clearTimeout(timer);
+      timer = setTimeout(() => { document.documentElement.classList.add('tn-nav'); window.tnGauge.start(); }, 200);
+    });
+    // Back/forward cache restores the old page as it was: clear the loader.
+    window.addEventListener('pageshow', (e) => {
+      if (!e.persisted) return;
+      clearTimeout(timer);
+      document.documentElement.classList.remove('tn-nav', 'tn-loading', 'tn-out');
+    });
+  }
+
   // Gauge needle sweep (geometry is server-rendered)
   const gauge = $('.gauge');
   if (gauge) requestAnimationFrame(() => setTimeout(() => gauge.classList.add('is-on'), 250));

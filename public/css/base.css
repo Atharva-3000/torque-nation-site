@@ -24,6 +24,8 @@ body {
 }
 
 img, svg, video { display: block; max-width: 100%; height: auto; }
+/* <picture> only swaps the source; the <img> inside keeps its own layout. */
+picture { display: contents; }
 input, button, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.2em; }

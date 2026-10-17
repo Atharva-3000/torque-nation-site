@@ -49,6 +49,12 @@ function send(res, status, body, headers = {}) {
 }
 const json = (res, status, data, headers = {}) => send(res, status, JSON.stringify(data), { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers });
 const html = (res, status, body) => send(res, status, body, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+// Public pages: browsers always revalidate, but the CDN (Vercel's edge) keeps a
+// copy for 10 minutes and serves a stale one while it refreshes in the
+// background, so visitors almost never wait on the server. Admin edits show up
+// on the public site within ~10 minutes.
+const EDGE_CACHE = PROD ? 'public, max-age=0, s-maxage=600, stale-while-revalidate=86400' : 'no-cache';
+const publicHtml = (res, body) => send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': EDGE_CACHE });
 const redirect = (res, to) => send(res, 302, '', { Location: to });
 
 async function readBody(req, limit = 1_000_000) {
@@ -432,7 +438,7 @@ export async function app(req, res) {
   try {
     if (path.startsWith('/api/')) return await api(req, res, path, currentUser(req));
 
-    if (PAGES[path] && (req.method === 'GET' || req.method === 'HEAD')) return html(res, 200, renderPage(PAGES[path].view, { ...PAGES[path], path }, url.origin));
+    if (PAGES[path] && (req.method === 'GET' || req.method === 'HEAD')) return publicHtml(res, renderPage(PAGES[path].view, { ...PAGES[path], path }, url.origin));
 
     if (path === '/admin/login') {
       if (currentUser(req)) return redirect(res, '/admin');
@@ -451,14 +457,18 @@ export async function app(req, res) {
     }
 
     if (path.startsWith('/uploads/') && (await serveFile(res, UPLOAD_DIR, path.slice('/uploads/'.length), 'public, max-age=31536000, immutable'))) return;
-    if (path === '/robots.txt') return send(res, 200, `User-agent: *\nDisallow: /admin\nDisallow: /api\nSitemap: ${(getSettings().site_url || url.origin).replace(/\/$/, '')}/sitemap.xml\n`, { 'Content-Type': 'text/plain' });
+    if (path === '/robots.txt') return send(res, 200, `User-agent: *\nDisallow: /admin\nDisallow: /api\nSitemap: ${(getSettings().site_url || url.origin).replace(/\/$/, '')}/sitemap.xml\n`, { 'Content-Type': 'text/plain', 'Cache-Control': EDGE_CACHE });
     if (path === '/sitemap.xml') {
       const base = (getSettings().site_url || url.origin).replace(/\/$/, '');
       const hasWork = db.prepare('SELECT COUNT(*) n FROM portfolio WHERE published = 1').get().n > 0;
       const urls = Object.entries(PAGES).filter(([p, m]) => !m.noindex && (p !== '/work' || hasWork)).map(([p]) => `<url><loc>${base}${p}</loc></url>`).join('');
-      return send(res, 200, `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`, { 'Content-Type': 'application/xml' });
+      return send(res, 200, `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`, { 'Content-Type': 'application/xml', 'Cache-Control': EDGE_CACHE });
     }
-    if (await serveFile(res, PUBLIC, path, PROD ? 'public, max-age=86400' : 'no-cache')) return;
+    // Same policy as vercel.json, for when this runs as a plain Node server.
+    const staticCache = !PROD ? 'no-cache'
+      : (url.searchParams.has('v') || path.startsWith('/fonts/')) ? 'public, max-age=31536000, immutable'
+      : 'public, max-age=86400, stale-while-revalidate=604800';
+    if (await serveFile(res, PUBLIC, path, staticCache)) return;
 
     return html(res, 404, renderPage('404.html', { nav: '', title: 'Page not found', description: 'This page does not exist.', noindex: true, path }, url.origin));
   } catch (err) {
