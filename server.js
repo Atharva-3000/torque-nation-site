@@ -425,7 +425,8 @@ async function serveFile(res, root, rel, cache = 'public, max-age=3600') {
 }
 
 // ---- router ----------------------------------------------------------------
-const server = http.createServer(async (req, res) => {
+// Exported so Vercel can run it as a serverless function (see api/index.js).
+export async function app(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let path = decodeURIComponent(url.pathname);
   if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
@@ -466,6 +467,8 @@ const server = http.createServer(async (req, res) => {
     if (path.startsWith('/api/')) return json(res, err.status || 500, { error: err.status ? err.message : 'Server error' });
     return html(res, 500, 'Server error');
   }
-});
+}
 
-server.listen(PORT, () => console.log(`Torque Nation running → http://localhost:${PORT}`));
+if (!process.env.VERCEL) {
+  http.createServer(app).listen(PORT, () => console.log(`Torque Nation running → http://localhost:${PORT}`));
+}

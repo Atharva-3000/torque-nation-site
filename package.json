@@ -4,7 +4,7 @@
   "private": true,
   "description": "Torque Nation, a premium superbike workshop in Ratlam: website, admin panel and invoice generator.",
   "type": "module",
-  "engines": { "node": ">=22.13" },
+  "engines": { "node": "22.x" },
   "scripts": {
     "start": "NODE_ENV=production node --disable-warning=ExperimentalWarning server.js",
     "dev": "node --watch --disable-warning=ExperimentalWarning server.js",
