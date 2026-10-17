@@ -425,7 +425,6 @@ async function serveFile(res, root, rel, cache = 'public, max-age=3600') {
 }
 
 // ---- router ----------------------------------------------------------------
-// Exported so Vercel can run it as a serverless function (see api/index.js).
 export async function app(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let path = decodeURIComponent(url.pathname);
@@ -468,6 +467,9 @@ export async function app(req, res) {
     return html(res, 500, 'Server error');
   }
 }
+
+// Vercel (Node.js preset) imports this file and calls the default export per request.
+export default app;
 
 if (!process.env.VERCEL) {
   http.createServer(app).listen(PORT, () => console.log(`Torque Nation running → http://localhost:${PORT}`));
