@@ -6,8 +6,11 @@
   "type": "module",
   "engines": { "node": "22.x" },
   "scripts": {
-    "start": "NODE_ENV=production node --disable-warning=ExperimentalWarning server.js",
-    "dev": "node --watch --disable-warning=ExperimentalWarning server.js",
-    "reset-password": "node --disable-warning=ExperimentalWarning scripts/reset-password.js"
+    "start": "NODE_ENV=production node server.js",
+    "dev": "node --watch server.js",
+    "reset-password": "node scripts/reset-password.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.0"
   }
 }

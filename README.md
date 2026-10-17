@@ -5,11 +5,12 @@ Premium superbike and 450cc+ workshop in Ratlam. One Node.js app with:
 - **Public website**: Home, Services, Pricing, Our work (portfolio), Contact / booking, plus a living design system at `/design-system`.
 - **Admin panel** at `/admin`: GST invoices and estimates (print / save as PDF, WhatsApp share), rate card, brand logos, portfolio with photos, booking requests from the website, bike-model → price-class list, parts list, business settings.
 
-No npm packages, no build step. Needs **Node.js 22.13 or newer** (uses the built-in SQLite).
+One npm package (`@libsql/client`, the SQLite/Turso driver), no build step. Needs **Node.js 22**.
 
 ## Run it
 
 ```bash
+npm install
 npm run dev
 ```
 
@@ -47,21 +48,33 @@ The public `/pricing` page reads the same rate card, so the website and the invo
 
 ## Deploying
 
-Any host that runs a long-lived Node process with a persistent disk works: a small VPS (DigitalOcean, Hostinger VPS, AWS Lightsail), Railway or Render with a volume. Serverless hosts (Vercel, Netlify) will **not** work, because the database is a local file.
+**Vercel (current setup).** Vercel's disk is wiped whenever it starts a fresh copy of the app, so all data (invoices, enquiries, logins, uploaded photos) lives in a **Turso** database:
+
+1. Vercel → project → **Storage** → connect a Turso database. This sets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
+2. Settings → Environment Variables: `ADMIN_USER` and `ADMIN_PASSWORD` create the first admin. They are only used while the database has no users; after that, change the password in the admin.
+3. Redeploy.
+
+Forgot the live password? Copy the two `TURSO_*` values from Vercel and run:
 
 ```bash
+TURSO_DATABASE_URL="libsql://..." TURSO_AUTH_TOKEN="..." npm run reset-password -- admin "a-new-long-password"
+```
+
+**VPS / Railway / Render.** Without the `TURSO_*` variables the app uses a SQLite file in `DATA_DIR`, so it needs a persistent disk:
+
+```bash
+npm install
 PORT=3000 DATA_DIR=/var/lib/torque-nation npm start
 ```
 
 - Put it behind HTTPS (Caddy or nginx). `npm start` sets `NODE_ENV=production`, which marks the login cookie `Secure`.
-- **Back up `DATA_DIR`** (the `.db` file and `uploads/`). It holds every invoice.
-- Optional env vars: `ADMIN_USER` / `ADMIN_PASSWORD` set the first admin on first run instead of generating one.
+- **Back up the database** (Turso has point-in-time restore; on a VPS, back up `DATA_DIR`). It holds every invoice.
 
 ## Project layout
 
 ```
 server.js              HTTP server, routes, JSON API
-lib/db.js              SQLite schema, first-run seed, helpers
+lib/db.js              Database (Turso or local SQLite), schema, first-run seed, uploads, helpers
 lib/seed-data.js       Starting rate card, bike list, parts, brands, settings
 lib/render.js          Page templating + invoice print renderer
 lib/auth.js            scrypt password hashing, login throttle
