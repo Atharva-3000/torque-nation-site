@@ -3,8 +3,9 @@
 import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { join, extname, normalize, basename } from 'node:path';
-import { randomBytes } from 'node:crypto';
-import { db, ready, getSettings, saveSettings, getCatalog, rowToDoc, rowToPortfolio, putUpload, getUpload, deleteUpload, UPLOAD_DIR } from './lib/db.js';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { dangerouslyDeleteByTag } from '@vercel/functions';
+import { db, ready, ENV_ADMIN, getSettings, saveSettings, getCatalog, settingsFromRows, rowToCatalog, rowToDoc, rowToPortfolio, putUpload, getUpload, deleteUpload, UPLOAD_DIR } from './lib/db.js';
 import { verifyPassword, hashPassword, newToken, throttle, clearThrottle } from './lib/auth.js';
 import { renderPage, renderInvoice, view } from './lib/render.js';
 import { computeTotals, fiscalYear } from './public/js/calc.js';
@@ -13,6 +14,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = join(process.cwd(), 'public');
 const SESSION_DAYS = 7;
 const PROD = process.env.NODE_ENV === 'production';
+const ON_VERCEL = !!process.env.VERCEL;
 
 
 const MIME = {
@@ -46,14 +48,34 @@ function send(res, status, body, headers = {}) {
   });
   res.end(body);
 }
-const json = (res, status, data, headers = {}) => send(res, status, JSON.stringify(data), { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers });
+// JSON responses. When an admin change touches what the public site shows
+// (res.purgeSite set in api()), the CDN copies of public pages are dropped
+// first, so the change is live by the time the admin sees "Saved".
+const json = (res, status, data, headers = {}) => {
+  const out = () => send(res, status, JSON.stringify(data), { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers });
+  if (!res.purgeSite || status >= 400) return out();
+  return purgeSite().then((r) => { headers['X-TN-Purge'] = r; out(); });
+};
 const html = (res, status, body) => send(res, status, body, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
-// Public pages: browsers always revalidate, but the CDN (Vercel's edge) keeps a
-// copy for 10 minutes and serves a stale one while it refreshes in the
-// background, so visitors almost never wait on the server. Admin edits show up
-// on the public site within ~10 minutes.
-const EDGE_CACHE = PROD ? 'public, max-age=0, s-maxage=600, stale-while-revalidate=86400' : 'no-cache';
-const publicHtml = (res, body) => send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': EDGE_CACHE });
+
+// Public pages are served from Vercel's CDN (Mumbai edge for India), tagged
+// "site". Every admin change that affects them deletes that tag, so the next
+// visit renders fresh. The 1-hour lifetime only matters if a purge ever fails.
+// Browsers always revalidate, so nobody keeps an old copy locally.
+const SITE_TAG = 'site';
+const PUBLIC_CACHE = ON_VERCEL
+  ? { 'Cache-Control': 'public, max-age=0, must-revalidate', 'Vercel-CDN-Cache-Control': 'max-age=3600, stale-while-revalidate=86400', 'Vercel-Cache-Tag': SITE_TAG }
+  : { 'Cache-Control': 'no-cache' };
+const publicHtml = (res, body) => send(res, 200, body, { 'Content-Type': 'text/html; charset=utf-8', ...PUBLIC_CACHE });
+
+async function purgeSite() {
+  if (!ON_VERCEL) return 'local';
+  const ctx = globalThis[Symbol.for('@vercel/request-context')]?.get?.();
+  if (!ctx?.purge) { console.error('CDN purge unavailable: no Vercel request context'); return 'unavailable'; }
+  try { await dangerouslyDeleteByTag(SITE_TAG); return 'ok'; } catch (e) { console.error('CDN purge failed', e); return 'error'; }
+}
+// API routes whose writes change what public pages show.
+const PUBLIC_DATA = new Set(['settings', 'catalog', 'bikes', 'brands', 'portfolio']);
 const redirect = (res, to) => send(res, 302, '', { Location: to });
 // Same policy as vercel.json, for when this runs as a plain Node server.
 const staticCache = (url, path) => !PROD ? 'no-cache'
@@ -64,7 +86,7 @@ async function readBody(req, limit = 1_000_000) {
   const chunks = []; let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > limit) throw Object.assign(new Error('Payload too large'), { status: 413 });
+    if (size > limit) throw Object.assign(new Error('Too much data in one save. Add photos a few at a time.'), { status: 413 });
     chunks.push(chunk);
   }
   const raw = Buffer.concat(chunks).toString('utf8');
@@ -75,7 +97,9 @@ async function readBody(req, limit = 1_000_000) {
 function cookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').map((s) => s.trim().split('=')).filter((p) => p[0]).map(([k, ...v]) => [k, decodeURIComponent(v.join('='))]));
 }
-const ip = (req) => (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
+// Vercel sets x-real-ip itself; x-forwarded-for's first entry can be spoofed.
+const ip = (req) => req.headers['x-real-ip'] || (req.headers['x-forwarded-for'] || '').split(',').pop().trim() || req.socket.remoteAddress;
+const sameSecret = (a, b) => { const x = Buffer.from(String(a ?? '')), y = Buffer.from(String(b ?? '')); return x.length === y.length && timingSafeEqual(x, y); };
 
 async function currentUser(req) {
   const token = cookies(req).tn_session;
@@ -138,12 +162,21 @@ async function nextNumber(type, date) {
 }
 
 async function insertDoc(type, d, requestedStatus, sourceId = null) {
-  const { fy, seq, number } = await nextNumber(type, d.date);
   const status = statusFor(type, d.totals, d.payment, requestedStatus);
-  const r = await db.prepare(`INSERT INTO documents (doc_type, number, fy, seq, date, customer, vehicle, items, options, totals, notes, payment, status, source_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(type, number, fy, seq, d.date, JSON.stringify(d.customer), JSON.stringify(d.vehicle),
-    JSON.stringify(d.items), JSON.stringify(d.options), JSON.stringify(d.totals), d.notes, JSON.stringify(d.payment), status, sourceId);
-  return Number(r.lastInsertRowid);
+  // Two saves at the same moment can pick the same number; the UNIQUE index
+  // rejects the second, which then takes the next number.
+  for (let attempt = 0; ; attempt++) {
+    const { fy, seq, number } = await nextNumber(type, d.date);
+    try {
+      const r = await db.prepare(`INSERT INTO documents (doc_type, number, fy, seq, date, customer, vehicle, items, options, totals, notes, payment, status, source_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(type, number, fy, seq, d.date, JSON.stringify(d.customer), JSON.stringify(d.vehicle),
+        JSON.stringify(d.items), JSON.stringify(d.options), JSON.stringify(d.totals), d.notes, JSON.stringify(d.payment), status, sourceId);
+      return Number(r.lastInsertRowid);
+    } catch (e) {
+      if (attempt < 3 && /UNIQUE/i.test(String(e?.message))) continue;
+      throw e;
+    }
+  }
 }
 
 // ---- uploads ---------------------------------------------------------------
@@ -157,6 +190,8 @@ async function saveUpload(dataUrl) {
   await putUpload(name, MIME[ext], buf);
   return `/uploads/${name}`;
 }
+// Only our own image paths are accepted where the admin sends a URL back.
+const cleanImageUrl = (v) => (typeof v === 'string' && /^\/(uploads|img)\/[\w./-]+$/.test(v) && !v.includes('..') ? v : '');
 async function removeUpload(url) {
   if (typeof url === 'string' && url.startsWith('/uploads/')) await deleteUpload(basename(url)).catch(() => {});
 }
@@ -194,12 +229,24 @@ async function api(req, res, path, user) {
   if (seg[0] === 'login' && m === 'POST') {
     if (!throttle('login:' + ip(req))) return json(res, 429, { error: 'Too many attempts. Try again in 15 minutes.' });
     const b = await readBody(req, 5_000);
-    const u = await db.prepare('SELECT * FROM users WHERE username = ?').get(str(b.username, 60));
-    if (!u || !verifyPassword(b.password, u.pass_hash)) return json(res, 401, { error: 'Wrong username or password.' });
+    const username = str(b.username, 60);
+    let u = await db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE').get(username);
+    if (!u || !verifyPassword(b.password, u.pass_hash)) {
+      // Recovery: ADMIN_USER / ADMIN_PASSWORD from Vercel always sign in, and
+      // reset the stored password to match.
+      if (!ENV_ADMIN || username.toLowerCase() !== ENV_ADMIN.username.toLowerCase() || !sameSecret(b.password, ENV_ADMIN.password)) {
+        return json(res, 401, { error: 'Wrong username or password.' });
+      }
+      await db.prepare('INSERT INTO users (username, pass_hash) VALUES (?, ?) ON CONFLICT(username) DO UPDATE SET pass_hash = excluded.pass_hash')
+        .run(ENV_ADMIN.username, hashPassword(ENV_ADMIN.password));
+      u = await db.prepare('SELECT * FROM users WHERE username = ?').get(ENV_ADMIN.username);
+    }
     clearThrottle('login:' + ip(req));
     const token = newToken();
-    await db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now());
-    await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, u.id, Date.now() + SESSION_DAYS * 86400_000);
+    await db.batch([
+      ['DELETE FROM sessions WHERE expires_at < ?', [Date.now()]],
+      ['INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)', [token, u.id, Date.now() + SESSION_DAYS * 86400_000]],
+    ]);
     return json(res, 200, { ok: true }, { 'Set-Cookie': sessionCookie(token, SESSION_DAYS * 86400) });
   }
 
@@ -207,6 +254,7 @@ async function api(req, res, path, user) {
   // header (cross-site forms cannot set it) on top of SameSite=Strict.
   if (!user) return json(res, 401, { error: 'Not signed in' });
   if (m !== 'GET' && req.headers['x-requested-with'] !== 'tn-admin') return json(res, 403, { error: 'Bad request origin' });
+  if (m !== 'GET' && PUBLIC_DATA.has(seg[0])) res.purgeSite = true;
 
   if (seg[0] === 'logout' && m === 'POST') {
     await db.prepare('DELETE FROM sessions WHERE token = ?').run(user.token);
@@ -219,44 +267,53 @@ async function api(req, res, path, user) {
     const u = await db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
     if (!verifyPassword(b.current, u.pass_hash)) return json(res, 400, { error: 'Current password is wrong.' });
     if (String(b.next || '').length < 10) return json(res, 400, { error: 'New password must be at least 10 characters.' });
-    await db.prepare('UPDATE users SET pass_hash = ? WHERE id = ?').run(hashPassword(b.next), user.id);
-    await db.prepare('DELETE FROM sessions WHERE user_id = ? AND token != ?').run(user.id, user.token);
+    await db.batch([
+      ['UPDATE users SET pass_hash = ? WHERE id = ?', [hashPassword(b.next), user.id]],
+      ['DELETE FROM sessions WHERE user_id = ? AND token != ?', [user.id, user.token]],
+    ]);
     return json(res, 200, { ok: true });
   }
 
   if (seg[0] === 'bootstrap') {
-    return json(res, 200, {
-      settings: await getSettings(),
-      catalog: await getCatalog(),
-      bikes: await db.prepare('SELECT * FROM bike_models ORDER BY brand, model').all(),
-      parts: await db.prepare('SELECT * FROM part_presets ORDER BY sort, name').all(),
-    });
+    const [settings, categories, items, bikes, parts] = await db.reads([
+      ['SELECT key, value FROM settings'],
+      ['SELECT * FROM categories ORDER BY sort, name'],
+      ['SELECT * FROM catalog ORDER BY sort, name'],
+      ['SELECT * FROM bike_models ORDER BY brand, model'],
+      ['SELECT * FROM part_presets ORDER BY sort, name'],
+    ]);
+    return json(res, 200, { settings: settingsFromRows(settings), catalog: { categories, items: items.map(rowToCatalog) }, bikes, parts });
+  }
+
+  // One image per request, so no save ever runs into Vercel's 4.5 MB body limit.
+  if (seg[0] === 'upload' && m === 'POST') {
+    const b = await readBody(req, 4_000_000);
+    return json(res, 200, { url: await saveUpload(b.data) });
   }
 
   if (seg[0] === 'settings' && m === 'PUT') {
-    const b = await readBody(req, 6_000_000);
-    if (b.hero_image_data) {
-      const old = (await getSettings()).hero_image;
-      b.hero_image = await saveUpload(b.hero_image_data);
-      await removeUpload(old);
-    }
-    delete b.hero_image_data;
+    const b = await readBody(req, 4_000_000);
+    const old = (b.hero_image_data || b.replace_hero) ? (await getSettings()).hero_image : null;
+    if (b.hero_image_data) b.hero_image = await saveUpload(b.hero_image_data);
+    if ('hero_image' in b) b.hero_image = cleanImageUrl(b.hero_image);
+    if (old && old !== b.hero_image) await removeUpload(old);
+    delete b.hero_image_data; delete b.replace_hero;
     await saveSettings(b);
     return json(res, 200, await getSettings());
   }
 
   if (seg[0] === 'stats') {
     const t = today(), monthStart = t.slice(0, 8) + '01';
-    const inv = await db.prepare(`SELECT totals, payment, status FROM documents WHERE doc_type = 'invoice' AND status != 'void' AND date >= ?`).all(monthStart);
+    const [inv, open, [est], [bk]] = await db.reads([
+      [`SELECT totals, payment, status FROM documents WHERE doc_type = 'invoice' AND status != 'void' AND date >= ?`, [monthStart]],
+      [`SELECT totals, payment FROM documents WHERE doc_type = 'invoice' AND status IN ('unpaid','partial')`],
+      [`SELECT COUNT(*) n FROM documents WHERE doc_type = 'estimate' AND status IN ('draft','sent','approved')`],
+      [`SELECT COUNT(*) n FROM bookings WHERE status = 'new'`],
+    ]);
     const month = inv.reduce((a, r) => a + JSON.parse(r.totals).total, 0);
     const collected = inv.reduce((a, r) => a + Math.round(JSON.parse(r.payment).paid * 100), 0);
-    const outstanding = (await db.prepare(`SELECT totals, payment FROM documents WHERE doc_type = 'invoice' AND status IN ('unpaid','partial')`).all())
-      .reduce((a, r) => a + JSON.parse(r.totals).total - Math.round(JSON.parse(r.payment).paid * 100), 0);
-    return json(res, 200, {
-      month, collected, outstanding, invoicesThisMonth: inv.length,
-      openEstimates: (await db.prepare(`SELECT COUNT(*) n FROM documents WHERE doc_type = 'estimate' AND status IN ('draft','sent','approved')`).get()).n,
-      newBookings: (await db.prepare(`SELECT COUNT(*) n FROM bookings WHERE status = 'new'`).get()).n,
-    });
+    const outstanding = open.reduce((a, r) => a + JSON.parse(r.totals).total - Math.round(JSON.parse(r.payment).paid * 100), 0);
+    return json(res, 200, { month, collected, outstanding, invoicesThisMonth: inv.length, openEstimates: est.n, newBookings: bk.n });
   }
 
   // Documents
@@ -359,9 +416,9 @@ async function api(req, res, path, user) {
     const list = async () => await db.prepare('SELECT * FROM brands ORDER BY sort, name').all();
     if (m === 'GET') return json(res, 200, await list());
     if (m === 'POST') {
-      const b = await readBody(req, 3_000_000);
+      const b = await readBody(req, 4_000_000);
       if (!str(b.name)) return json(res, 400, { error: 'Name is required.' });
-      const newLogo = b.logoData ? await saveUpload(b.logoData) : null;
+      const newLogo = b.logoData ? await saveUpload(b.logoData) : (cleanImageUrl(b.logo) || null);
       if (b.id) {
         const old = await db.prepare('SELECT logo FROM brands WHERE id = ?').get(num(b.id));
         let logo = old?.logo || null;
@@ -386,9 +443,12 @@ async function api(req, res, path, user) {
     const list = async () => (await db.prepare('SELECT * FROM portfolio ORDER BY sort, created_at DESC').all()).map(rowToPortfolio);
     if (m === 'GET') return json(res, 200, await list());
     if (m === 'POST') {
-      const b = await readBody(req, 15_000_000);
+      const b = await readBody(req, 4_000_000);
       const images = [];
-      for (const img of (b.images || []).slice(0, 12)) images.push(String(img).startsWith('data:') ? await saveUpload(img) : str(img, 200));
+      for (const img of (Array.isArray(b.images) ? b.images : []).slice(0, 12)) {
+        const url = String(img).startsWith('data:') ? await saveUpload(img) : cleanImageUrl(img);
+        if (url) images.push(url);
+      }
       const work = (b.work || []).map((x) => str(x, 140)).filter(Boolean).slice(0, 20);
       if (!str(b.title)) return json(res, 400, { error: 'Title is required.' });
       if (b.id) {
@@ -475,12 +535,12 @@ export async function app(req, res) {
     }
 
     if (path.startsWith('/uploads/') && (await serveUpload(res, basename(path)))) return;
-    if (path === '/robots.txt') return send(res, 200, `User-agent: *\nDisallow: /admin\nDisallow: /api\nSitemap: ${((await getSettings()).site_url || url.origin).replace(/\/$/, '')}/sitemap.xml\n`, { 'Content-Type': 'text/plain', 'Cache-Control': EDGE_CACHE });
+    if (path === '/robots.txt') return send(res, 200, `User-agent: *\nDisallow: /admin\nDisallow: /api\nSitemap: ${((await getSettings()).site_url || url.origin).replace(/\/$/, '')}/sitemap.xml\n`, { 'Content-Type': 'text/plain', ...PUBLIC_CACHE });
     if (path === '/sitemap.xml') {
       const base = ((await getSettings()).site_url || url.origin).replace(/\/$/, '');
       const hasWork = (await db.prepare('SELECT COUNT(*) n FROM portfolio WHERE published = 1').get()).n > 0;
       const urls = Object.entries(PAGES).filter(([p, m]) => !m.noindex && (p !== '/work' || hasWork)).map(([p]) => `<url><loc>${base}${p}</loc></url>`).join('');
-      return send(res, 200, `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`, { 'Content-Type': 'application/xml', 'Cache-Control': EDGE_CACHE });
+      return send(res, 200, `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`, { 'Content-Type': 'application/xml', ...PUBLIC_CACHE });
     }
     if (await serveFile(res, PUBLIC, path, staticCache(url, path))) return;
 

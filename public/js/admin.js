@@ -18,8 +18,24 @@ async function api(path, { method = 'GET', body } = {}) {
   });
   if (r.status === 401) { location.href = '/admin/login'; throw new Error('Signed out'); }
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || `Request failed (${r.status})`);
+  if (!r.ok) {
+    throw new Error(j.error || ({
+      413: 'Too much data in one save. Add photos a few at a time.',
+      429: 'Too many requests. Wait a minute and try again.',
+      502: 'The server had a problem. Please try again.', 503: 'The server is busy. Please try again.', 504: 'The server took too long. Please try again.',
+    })[r.status] || `Request failed (${r.status})`);
+  }
+  if (r.headers.get('X-TN-Purge') && !['ok', 'local'].includes(r.headers.get('X-TN-Purge'))) {
+    console.warn('Saved, but the website cache could not be refreshed:', r.headers.get('X-TN-Purge'));
+  }
   return j;
+}
+
+// Images go up one per request (Vercel caps a request at 4.5 MB) and come back
+// as /uploads/... URLs that the save then refers to.
+async function uploadImage(file, maxW, quality, alpha) {
+  const data = await readImage(file, maxW, quality, alpha);
+  return (await api('upload', { method: 'POST', body: { data } })).url;
 }
 
 function toast(msg, kind = 'ok') {
@@ -50,7 +66,7 @@ const STATUS = {
 };
 const badge = (s) => `<span class="badge ${STATUS[s]?.[0] ? 'badge--' + STATUS[s][0] : ''}">${esc(STATUS[s]?.[1] || s)}</span>`;
 
-function readImage(file, maxW = 1600, quality = 0.82) {
+function readImage(file, maxW = 1600, quality = 0.82, alpha = true) {
   return new Promise((resolve, reject) => {
     if (file.type === 'image/svg+xml') {
       const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = reject; fr.readAsDataURL(file); return;
@@ -60,7 +76,7 @@ function readImage(file, maxW = 1600, quality = 0.82) {
       const scale = Math.min(1, maxW / img.width);
       const c = document.createElement('canvas');
       c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
-      const keepAlpha = file.type === 'image/png' || file.type === 'image/webp';
+      const keepAlpha = alpha && (file.type === 'image/png' || file.type === 'image/webp');
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       resolve(c.toDataURL(keepAlpha ? 'image/png' : 'image/jpeg', quality));
       URL.revokeObjectURL(img.src);
@@ -113,7 +129,7 @@ window.addEventListener('hashchange', route);
 window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
 $('[data-side-toggle]').addEventListener('click', () => $('[data-side]').classList.toggle('is-open'));
-$('[data-logout]').addEventListener('click', async () => { await api('logout', { method: 'POST' }); location.href = '/admin/login'; });
+$('[data-logout]').addEventListener('click', async () => { await api('logout', { method: 'POST' }).catch(() => {}); location.href = '/admin/login'; });
 
 async function refreshBookingCount() {
   const s = await api('stats');
@@ -518,8 +534,15 @@ async function bookingsPage() {
           <td class="nowrap"><a class="btn btn--secondary btn--sm" href="#/documents/new?type=estimate&name=${encodeURIComponent(b.name)}&phone=${encodeURIComponent(b.phone)}&bike=${encodeURIComponent(b.bike || '')}">Estimate</a>
             <button class="btn btn--ghost btn--sm btn--icon" data-del="${b.id}" aria-label="Delete">✕</button></td></tr>`).join('')}
       </tbody></table></div>` : '<div class="panel__body"><div class="empty"><h3>No requests yet</h3><p>Requests from the website contact form show up here.</p></div></div>'}</div></div>`;
-    $$('[data-status]', view).forEach((s) => s.addEventListener('change', async () => { await api('bookings/' + s.dataset.status, { method: 'PUT', body: { status: s.value } }).catch(fail); refreshBookingCount(); toast('Updated'); }));
-    $$('[data-del]', view).forEach((b) => b.addEventListener('click', async () => { if (confirm('Delete this request?')) { draw(await api('bookings/' + b.dataset.del, { method: 'DELETE' })); refreshBookingCount(); } }));
+    $$('[data-status]', view).forEach((s) => s.addEventListener('change', async () => {
+      try { await api('bookings/' + s.dataset.status, { method: 'PUT', body: { status: s.value } }); toast('Updated'); } catch (err) { fail(err); }
+      refreshBookingCount().catch(() => {});
+    }));
+    $$('[data-del]', view).forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Delete this request?')) return;
+      try { draw(await api('bookings/' + b.dataset.del, { method: 'DELETE' })); toast('Deleted'); } catch (err) { fail(err); }
+      refreshBookingCount().catch(() => {});
+    }));
   };
   draw(rows);
 }
@@ -544,7 +567,7 @@ async function ratesPage() {
   </div>`;
 
   const save = async (item) => {
-    try { boot.catalog = await api('catalog/' + encodeURIComponent(item.id), { method: 'PUT', body: item }); toast(`${item.name} saved`); } catch (e) { fail(e); }
+    try { boot.catalog = await api('catalog/' + encodeURIComponent(item.id), { method: 'PUT', body: item }); toast(`${item.name} saved`); return true; } catch (e) { fail(e); return false; }
   };
   view.onchange = (e) => {
     const tr = e.target.closest('tr[data-id]'); if (!tr) return;
@@ -583,12 +606,12 @@ async function ratesPage() {
           prices: { A: price('pA'), B: price('pB'), C: price('pC') }, from: f.elements.from.checked, public: f.elements.public.checked };
         if (!body.name) return toast('Name is required', 'error');
         if (isNew) body.id = body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36).slice(-4);
-        await save(body); modal.close(); ratesPage();
+        if (await save(body)) { modal.close(); ratesPage(); }
       });
       const d = $('[data-del]', p);
       if (d) d.addEventListener('click', async () => {
         if (!confirm(`Delete "${item.name}"? Existing invoices keep their lines.`)) return;
-        boot.catalog = await api('catalog/' + encodeURIComponent(item.id), { method: 'DELETE' }); modal.close(); toast('Deleted'); ratesPage();
+        try { boot.catalog = await api('catalog/' + encodeURIComponent(item.id), { method: 'DELETE' }); modal.close(); toast('Deleted'); ratesPage(); } catch (err) { fail(err); }
       });
     });
   }
@@ -623,7 +646,7 @@ async function brandsPage() {
       if (e.target.matches('[data-logo]')) {
         const file = e.target.files[0]; if (!file) return;
         if (file.size > 2_000_000) return toast('Logo must be under 2 MB', 'error');
-        body.logoData = await readImage(file, 600, 0.92);
+        body.logo = await uploadImage(file, 600, 0.92);
       }
       rows = await api('brands', { method: 'POST', body }); draw(rows); toast('Saved');
     } catch (err) { fail(err); }
@@ -631,11 +654,14 @@ async function brandsPage() {
   view.onclick = async (e) => {
     if (e.target.closest('[data-new]')) {
       const name = prompt('Brand name'); if (!name) return;
-      rows = await api('brands', { method: 'POST', body: { name, category: '', published: true, sort: rows.length } }).catch(fail); draw(rows); return;
+      try { rows = await api('brands', { method: 'POST', body: { name, category: '', published: true, sort: rows.length } }); draw(rows); toast('Saved'); } catch (err) { fail(err); }
+      return;
     }
     const tr = e.target.closest('tr[data-id]'); if (!tr) return;
-    if (e.target.closest('[data-rmlogo]')) { rows = await api('brands', { method: 'POST', body: { ...rowData(tr), removeLogo: true } }).catch(fail); draw(rows); }
-    if (e.target.closest('[data-del]') && confirm('Delete this brand?')) { rows = await api('brands/' + tr.dataset.id, { method: 'DELETE' }); draw(rows); }
+    try {
+      if (e.target.closest('[data-rmlogo]')) { rows = await api('brands', { method: 'POST', body: { ...rowData(tr), removeLogo: true } }); draw(rows); toast('Logo removed'); }
+      if (e.target.closest('[data-del]') && confirm('Delete this brand?')) { rows = await api('brands/' + tr.dataset.id, { method: 'DELETE' }); draw(rows); toast('Deleted'); }
+    } catch (err) { fail(err); }
   };
 }
 
@@ -675,13 +701,21 @@ async function portfolioPage() {
       const thumbs = () => { $('[data-thumbs]', panel).innerHTML = images.map((src, i) => `<div class="thumb"><img src="${esc(src)}" alt=""><button type="button" data-rm="${i}" aria-label="Remove photo">✕</button></div>`).join(''); };
       thumbs();
       $('[data-thumbs]', panel).addEventListener('click', (e) => { const b = e.target.closest('[data-rm]'); if (b) { images.splice(Number(b.dataset.rm), 1); thumbs(); } });
+      const saveBtn = f.querySelector('.btn--primary');
+      let uploading = 0;
       $('[data-files]', panel).addEventListener('change', async (e) => {
-        for (const file of [...e.target.files].slice(0, 12 - images.length)) images.push(await readImage(file));
-        thumbs(); e.target.value = '';
+        const files = [...e.target.files].slice(0, 12 - images.length); e.target.value = '';
+        uploading += files.length; saveBtn.disabled = true; saveBtn.textContent = `Uploading ${uploading} photo${uploading > 1 ? 's' : ''}…`;
+        for (const file of files) {
+          try { images.push(await uploadImage(file)); thumbs(); } catch (err) { fail(err); }
+          uploading--; saveBtn.textContent = uploading ? `Uploading ${uploading} photo${uploading > 1 ? 's' : ''}…` : 'Save';
+        }
+        if (!uploading) saveBtn.disabled = false;
       });
       f.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = f.querySelector('.btn--primary'); btn.disabled = true; btn.textContent = 'Saving…';
+        if (uploading) return;
+        const btn = saveBtn; btn.disabled = true; btn.textContent = 'Saving…';
         try {
           rows = await api('portfolio', { method: 'POST', body: { id: p.id, title: f.elements.title.value, bike: f.elements.bike.value, sort: Number(f.elements.sort.value) || 0, summary: f.elements.summary.value,
             work: f.elements.work.value.split('\n').map((s) => s.trim()).filter(Boolean), images, published: f.elements.published.checked } });
@@ -689,7 +723,7 @@ async function portfolioPage() {
         } catch (err) { fail(err); btn.disabled = false; btn.textContent = 'Save'; }
       });
       const d = $('[data-del]', panel);
-      if (d) d.addEventListener('click', async () => { if (confirm('Delete this job and its photos?')) { rows = await api('portfolio/' + p.id, { method: 'DELETE' }); modal.close(); draw(); toast('Deleted'); } });
+      if (d) d.addEventListener('click', async () => { if (confirm('Delete this job and its photos?')) { try { rows = await api('portfolio/' + p.id, { method: 'DELETE' }); modal.close(); draw(); toast('Deleted'); } catch (err) { fail(err); } } });
     });
   }
 }
@@ -718,11 +752,11 @@ async function bikesPage() {
   view.onchange = async (e) => {
     const tr = e.target.closest('tr[data-id]'); if (!tr || !e.target.matches('[data-class]')) return;
     const b = boot.bikes.find((x) => String(x.id) === tr.dataset.id);
-    boot.bikes = await api('bikes', { method: 'POST', body: { ...b, class: e.target.value } }).catch(fail); toast('Saved');
+    try { boot.bikes = await api('bikes', { method: 'POST', body: { ...b, class: e.target.value } }); toast('Saved'); } catch (err) { fail(err); e.target.value = b.class; }
   };
   view.onclick = async (e) => {
     const tr = e.target.closest('tr[data-id]');
-    if (tr && e.target.closest('[data-del]') && confirm('Remove this model?')) { boot.bikes = await api('bikes/' + tr.dataset.id, { method: 'DELETE' }); draw(); }
+    if (tr && e.target.closest('[data-del]') && confirm('Remove this model?')) { try { boot.bikes = await api('bikes/' + tr.dataset.id, { method: 'DELETE' }); draw(); toast('Removed'); } catch (err) { fail(err); } }
   };
 }
 
@@ -748,11 +782,11 @@ async function partsPage() {
   view.onchange = async (e) => {
     const tr = e.target.closest('tr[data-id]'); if (!tr) return;
     const body = { id: Number(tr.dataset.id) }; $$('[data-k]', tr).forEach((i) => (body[i.dataset.k] = i.value));
-    boot.parts = await api('parts', { method: 'POST', body }).catch(fail); toast('Saved');
+    try { boot.parts = await api('parts', { method: 'POST', body }); toast('Saved'); } catch (err) { fail(err); }
   };
   view.onclick = async (e) => {
     const tr = e.target.closest('tr[data-id]');
-    if (tr && e.target.closest('[data-del]') && confirm('Remove this part?')) { boot.parts = await api('parts/' + tr.dataset.id, { method: 'DELETE' }); draw(); }
+    if (tr && e.target.closest('[data-del]') && confirm('Remove this part?')) { try { boot.parts = await api('parts/' + tr.dataset.id, { method: 'DELETE' }); draw(); toast('Removed'); } catch (err) { fail(err); } }
   };
 }
 
@@ -806,14 +840,15 @@ async function settingsPage() {
     const body = Object.fromEntries([...new FormData(e.target)].map(([k, v]) => [k, String(v).trim()]));
     body.gst_enabled = e.target.gst_enabled.checked;
     body.whatsapp = body.whatsapp.replace(/\D/g, '');
-    try { boot.settings = await api('settings', { method: 'PUT', body }); toast('Settings saved'); } catch (err) { fail(err); }
+    const btn = e.submitter || e.target.querySelector('.btn--primary'); btn.disabled = true;
+    try { boot.settings = await api('settings', { method: 'PUT', body }); dirty = false; toast('Settings saved. The website is updated.'); } catch (err) { fail(err); } finally { btn.disabled = false; }
   });
   $('[data-hero]', view).addEventListener('change', async (e) => {
     const file = e.target.files[0]; if (!file) return;
-    try { boot.settings = await api('settings', { method: 'PUT', body: { hero_image_data: await readImage(file, 1800, 0.82) } }); toast('Home page photo updated'); settingsPage(); } catch (err) { fail(err); }
+    try { boot.settings = await api('settings', { method: 'PUT', body: { hero_image: await uploadImage(file, 1800, 0.82, false), replace_hero: true } }); toast('Home page photo updated'); settingsPage(); } catch (err) { fail(err); }
   });
   const clear = $('[data-hero-clear]', view);
-  if (clear) clear.addEventListener('click', async () => { boot.settings = await api('settings', { method: 'PUT', body: { hero_image: '' } }); toast('Gauge graphic restored'); settingsPage(); });
+  if (clear) clear.addEventListener('click', async () => { try { boot.settings = await api('settings', { method: 'PUT', body: { hero_image: '', replace_hero: true } }); toast('Gauge graphic restored'); settingsPage(); } catch (err) { fail(err); } });
   $('[data-pw]', view).addEventListener('submit', async (e) => {
     e.preventDefault();
     try { await api('password', { method: 'POST', body: { current: e.target.current.value, next: e.target.next.value } }); e.target.reset(); toast('Password updated. Other sessions were signed out.'); } catch (err) { fail(err); }
@@ -822,7 +857,10 @@ async function settingsPage() {
 
 // ---- Start ---------------------------------------------------------------------------
 (async () => {
-  boot = await api('bootstrap');
+  try { boot = await api('bootstrap'); } catch (err) {
+    view.innerHTML = `<div class="admin-page"><div class="alert alert--danger">Could not load the admin: ${esc(err.message)} <a href="">Reload</a></div></div>`;
+    return;
+  }
   refreshBookingCount().catch(() => {});
   route();
 })();

@@ -5,7 +5,7 @@ Premium superbike and 450cc+ workshop in Ratlam. One Node.js app with:
 - **Public website**: Home, Services, Pricing, Our work (portfolio), Contact / booking, plus a living design system at `/design-system`.
 - **Admin panel** at `/admin`: GST invoices and estimates (print / save as PDF, WhatsApp share), rate card, brand logos, portfolio with photos, booking requests from the website, bike-model → price-class list, parts list, business settings.
 
-One npm package (`@libsql/client`, the SQLite/Turso driver), no build step. Needs **Node.js 22**.
+Two npm packages (`@libsql/client`, the SQLite/Turso driver, and `@vercel/functions` for CDN cache purging), no build step. Needs **Node.js 22**.
 
 ## Run it
 
@@ -51,10 +51,17 @@ The public `/pricing` page reads the same rate card, so the website and the invo
 **Vercel (current setup).** Vercel's disk is wiped whenever it starts a fresh copy of the app, so all data (invoices, enquiries, logins, uploaded photos) lives in a **Turso** database:
 
 1. Vercel → project → **Storage** → connect a Turso database. This sets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
-2. Settings → Environment Variables: `ADMIN_USER` and `ADMIN_PASSWORD` create the first admin. They are only used while the database has no users; after that, change the password in the admin.
+2. Settings → Environment Variables: `ADMIN_USER` and `ADMIN_PASSWORD`. They create the first admin and always work as a **recovery login**: signing in with them resets the stored password to match. Forgot the password? Change `ADMIN_PASSWORD` in Vercel, redeploy, sign in with it.
 3. Redeploy.
 
-Forgot the live password? Copy the two `TURSO_*` values from Vercel and run:
+How it stays fast and fresh:
+
+- Turso is reached over HTTPS, one request per batch of queries (not a WebSocket, which goes stale while Vercel sleeps and stalls ~10 s).
+- Public pages are cached on Vercel's CDN (tag `site`). Any admin change to settings, rate card, bikes, brands or portfolio deletes that tag, so the site shows the change on the next load. Admin responses carry `X-TN-Purge: ok` when this worked.
+- Keep the Vercel function region next to the Turso database (both in the US East region today). For lower admin latency from India, create the Turso database in `aws-ap-south-1` (Mumbai) and set the Vercel function region to `bom1`.
+- Photos upload one per request (Vercel caps a request at 4.5 MB) and are stored in the database.
+
+You can also reset the password from your computer: copy the two `TURSO_*` values from Vercel and run:
 
 ```bash
 TURSO_DATABASE_URL="libsql://..." TURSO_AUTH_TOKEN="..." npm run reset-password -- admin "a-new-long-password"

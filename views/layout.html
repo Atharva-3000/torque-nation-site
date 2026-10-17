@@ -38,7 +38,7 @@
       position: fixed; inset: 0; z-index: 100; display: grid; place-content: center; justify-items: center; gap: 18px;
       background: #0a0b0d; transition: opacity .22s ease-out;
     }
-    .tn-loading .tn-loader { animation: tn-failsafe 0s 4s forwards; }
+    .tn-loading .tn-loader { animation: tn-failsafe 0s 2.5s forwards; }
     .tn-nav .tn-loader { animation: tn-fade-in .16s ease-out both; }
     .tn-out .tn-loader { opacity: 0; pointer-events: none; }
     @keyframes tn-failsafe { to { visibility: hidden; opacity: 0; } }
@@ -91,15 +91,12 @@
       if (!h.classList.contains('tn-loading')) return;
       start();
       var began = performance.now();
+      // Lift as soon as the page and its fonts are ready (the hero photo keeps
+      // loading behind it, it is preloaded). Never hold the page more than 1.2 s.
       var ready = new Promise(function (r) { document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', r) : r(); })
-        .then(function () {
-          var waits = [document.fonts ? document.fonts.ready : null];
-          var hero = document.querySelector('.hero__photo img');
-          if (hero && hero.decode) waits.push(hero.decode().catch(function () {}));
-          return Promise.all(waits);
-        });
-      Promise.race([ready, new Promise(function (r) { setTimeout(r, 3000); })])
-        .then(function () { setTimeout(finish, Math.max(0, 500 - (performance.now() - began))); });
+        .then(function () { return document.fonts ? document.fonts.ready : null; });
+      Promise.race([ready, new Promise(function (r) { setTimeout(r, 1200); })])
+        .then(function () { setTimeout(finish, Math.max(0, 250 - (performance.now() - began))); });
     })();
   </script>
   <a class="skip-link" href="#main">Skip to content</a>
