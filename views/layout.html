@@ -52,7 +52,7 @@
     .tn-loader__needle line { stroke: #eeeae2; stroke-width: 3; stroke-linecap: round; }
     .tn-loader__hub { fill: #191c21; stroke: #e03c0a; stroke-width: 2; }
     .tn-loader__word { font: 800 13px/1 "Archivo", "Arial Narrow", system-ui, sans-serif; font-stretch: 125%; letter-spacing: .14em; color: #eeeae2; }
-    .tn-loader__word b { color: #e03c0a; font-weight: 800; }
+    .tn-loader__word b { color: #e03c0a; font-weight: 800; margin-left: .35em; }
   </style>
   {{{seo.preload}}}
   {{{head_assets}}}
@@ -75,6 +75,8 @@
       function start() { done = false; t0 = 0; h.classList.remove('tn-out'); draw(0); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); }
       function finish() {
         if (done) return; done = true; cancelAnimationFrame(raf);
+        // Background tabs pause animation frames: clear at once instead of waiting.
+        if (document.hidden) { draw(1); h.classList.remove('tn-loading', 'tn-nav', 'tn-out'); return; }
         var from = p, s = performance.now();
         (function step(t) {
           var k = Math.min(1, (t - s) / 260);
