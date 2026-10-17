@@ -1,0 +1,157 @@
+/* ==========================================================================
+   TORQUE NATION — DESIGN TOKENS  v1.0
+   Single source of truth. Every colour, size, space, radius and duration used
+   anywhere in the site, admin or invoice MUST come from here.
+   See DESIGN-SYSTEM.md for rationale and usage rules.
+   ========================================================================== */
+
+:root {
+  /* ---- Colour: primitives ------------------------------------------------ */
+  /* Ink — the workshop floor. Cool graphite, never pure black. */
+  --ink-950: #0a0b0d;
+  --ink-900: #101216;
+  --ink-850: #14171b;
+  --ink-800: #191c21;
+  --ink-700: #22262d;
+  --ink-600: #2e333b;
+  --ink-500: #444a54;
+
+  /* Steel — secondary text, rules, disabled. */
+  --steel-400: #8b929d;
+  --steel-300: #a9afb8;
+  --steel-200: #c7ccd3;
+
+  /* Bone — primary text on dark, paper for print. Warm, not blue-white. */
+  --bone-100: #eeeae2;
+  --bone-50: #f7f5f0;
+  --paper: #ffffff;
+
+  /* Redline — the one accent. Tachometer redline orange-red.
+     Use for primary actions, active state, and ONE highlight per view. */
+  --redline-300: #ff8a6b;
+  --redline-400: #ff6a45;
+  --redline-500: #ff4f1a;
+  --redline-600: #e03c0a;
+  --redline-700: #b32e06;
+
+  /* Heat-tint — titanium exhaust colouring. Decorative ONLY: 1–2px rules,
+     the logo underline, focus glow. Never fills, never text. */
+  --heat-gold: #c9a227;
+  --heat-bronze: #b4562a;
+  --heat-violet: #6b3fa0;
+  --heat-blue: #2f6fd6;
+  --heat-tint: linear-gradient(90deg, var(--heat-gold) 0%, var(--heat-bronze) 32%, var(--heat-violet) 64%, var(--heat-blue) 100%);
+
+  /* Status — admin only. */
+  --ok-500: #35b979;
+  --ok-bg: rgba(53, 185, 121, 0.12);
+  --warn-500: #f0b33a;
+  --warn-bg: rgba(240, 179, 58, 0.12);
+  --danger-500: #e5484d;
+  --danger-bg: rgba(229, 72, 77, 0.12);
+  --info-500: #5b8def;
+  --info-bg: rgba(91, 141, 239, 0.12);
+
+  /* ---- Colour: semantic (use these in components) ------------------------ */
+  --bg: var(--ink-950);
+  --surface: var(--ink-900);
+  --surface-2: var(--ink-850);
+  --surface-3: var(--ink-800);
+  --line: var(--ink-700);
+  --line-strong: var(--ink-600);
+  --text: var(--bone-100);
+  --text-muted: var(--steel-400);
+  --text-soft: var(--steel-300);
+  --accent: var(--redline-500);
+  --accent-hover: var(--redline-400);
+  --accent-press: var(--redline-600);
+  --on-accent: #120802;
+  --focus: var(--redline-400);
+
+  /* ---- Typography -------------------------------------------------------- */
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif; /* set font-stretch: 125% for display */
+  --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Fluid scale (min @ 360px → max @ 1440px) */
+  --fs-display-xl: clamp(3rem, 1.6rem + 6.2vw, 7.25rem);
+  --fs-display-l: clamp(2.25rem, 1.4rem + 3.8vw, 4.75rem);
+  --fs-h1: clamp(2rem, 1.5rem + 2.2vw, 3.25rem);
+  --fs-h2: clamp(1.5rem, 1.25rem + 1.1vw, 2.25rem);
+  --fs-h3: clamp(1.1875rem, 1.1rem + 0.4vw, 1.5rem);
+  --fs-h4: 1.0625rem;
+  --fs-lede: clamp(1.0625rem, 1rem + 0.35vw, 1.3125rem);
+  --fs-body: 1rem;
+  --fs-sm: 0.875rem;
+  --fs-xs: 0.75rem;
+  --fs-micro: 0.6875rem;
+
+  --lh-tight: 0.94;
+  --lh-snug: 1.15;
+  --lh-body: 1.6;
+
+  --track-display: -0.02em;
+  --track-micro: 0.14em;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-black: 800;
+
+  /* ---- Space (4px base) -------------------------------------------------- */
+  --s-1: 0.25rem;  /* 4  */
+  --s-2: 0.5rem;   /* 8  */
+  --s-3: 0.75rem;  /* 12 */
+  --s-4: 1rem;     /* 16 */
+  --s-5: 1.5rem;   /* 24 */
+  --s-6: 2rem;     /* 32 */
+  --s-7: 3rem;     /* 48 */
+  --s-8: 4rem;     /* 64 */
+  --s-9: 6rem;     /* 96 */
+  --s-10: 8rem;    /* 128 */
+  --section-y: clamp(4rem, 2.5rem + 6vw, 8rem);
+
+  /* ---- Layout ------------------------------------------------------------ */
+  --container: 1320px;
+  --container-narrow: 860px;
+  --gutter: clamp(1rem, 0.6rem + 1.6vw, 2rem);
+  --header-h: 68px;
+
+  /* ---- Shape: machined, not soft ----------------------------------------- */
+  --r-0: 0;
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 8px;
+  --r-pill: 999px;
+  --bw: 1px;
+
+  /* ---- Elevation: borders first, shadows only for overlays --------------- */
+  --shadow-overlay: 0 24px 64px -16px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--line);
+  --shadow-print: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 420ms;
+
+  /* ---- Signature: torque-wrench tick scale -------------------------------- */
+  --ticks: repeating-linear-gradient(90deg, var(--line-strong) 0 1px, transparent 1px 8px);
+  --ticks-major: repeating-linear-gradient(90deg, var(--steel-400) 0 1px, transparent 1px 40px);
+
+  --z-header: 50;
+  --z-overlay: 80;
+  --z-toast: 90;
+
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-base: 0ms;
+    --t-slow: 0ms;
+  }
+}

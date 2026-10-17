@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Centre (32,35), r 20, 270° sweep from 135° to 405°. Redline = last 20%. -->
+  <rect width="64" height="64" rx="6" fill="#0a0b0d"/>
+  <path d="M17.86 49.14A20 20 0 1 1 46.14 49.14" stroke="#eeeae2" stroke-width="3.5" stroke-linecap="butt"/>
+  <path d="M51.75 31.87A20 20 0 0 1 46.14 49.14" stroke="#ff4f1a" stroke-width="3.5" stroke-linecap="butt"/>
+  <path d="M32 35 41.9 24.1" stroke="#ff4f1a" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="32" cy="35" r="3.5" fill="#eeeae2"/>
+</svg>

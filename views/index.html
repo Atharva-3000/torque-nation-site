@@ -1,0 +1,117 @@
+<section class="hero">
+  <div class="container hero__grid">
+    <div class="hero__copy">
+      <h1 class="hero__title"><span class="eyebrow hero__kicker">Superbike workshop in {{biz.city}}</span> Torqued<br>to <span class="accent">spec.</span></h1>
+      <p class="lede">Service, shim work, suspension and tuning for 450cc to litre-class bikes. Diagnosed first, quoted before we start.</p>
+      <div class="btn-row">
+        <a class="btn btn--primary btn--lg" href="/contact#book">Book a service</a>
+        <a class="btn btn--secondary btn--lg" href="{{wa}}" target="_blank" rel="noopener">{{{wa_icon}}} WhatsApp us</a>
+      </div>
+    </div>
+
+    <aside class="hero__panel" aria-label="How every job runs">
+      {{{hero_visual}}}
+      <dl class="readout readout--panel">
+        <div class="readout__row"><dt>Diagnosis</dt><dd>Before parts</dd></div>
+        <div class="readout__row"><dt>Estimate</dt><dd>Approved by you</dd></div>
+        <div class="readout__row"><dt>Updates</dt><dd>Photos on WhatsApp</dd></div>
+        <div class="readout__row"><dt>Fasteners</dt><dd>Torqued to spec</dd></div>
+        <div class="readout__row"><dt>Parts</dt><dd>Branded, sealed packs</dd></div>
+      </dl>
+    </aside>
+  </div>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee__track">
+      <span>Himalayan 450</span><span>Interceptor 650</span><span>Ninja 650</span><span>Trident 660</span><span>Z900</span><span>Street Triple 765</span><span>890 Duke R</span><span>Tiger 900</span><span>V-Strom 800DE</span><span>S 1000 RR</span><span>ZX-10R</span><span>Panigale V4</span><span>Hayabusa</span><span>R 1300 GS</span>
+      <span>Himalayan 450</span><span>Interceptor 650</span><span>Ninja 650</span><span>Trident 660</span><span>Z900</span><span>Street Triple 765</span><span>890 Duke R</span><span>Tiger 900</span><span>V-Strom 800DE</span><span>S 1000 RR</span><span>ZX-10R</span><span>Panigale V4</span><span>Hayabusa</span><span>R 1300 GS</span>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>Measured, not guessed.</h2>
+      <p class="lede">A superbike is too expensive to learn on. Every job follows the same routine, from a chain adjust to a shim job.</p>
+    </div>
+    <div class="principles">
+      <article class="principle reveal"><h3>Diagnosis before parts</h3><p>We trace the fault to the part actually causing it, so you never pay for guesswork.</p></article>
+      <article class="principle reveal"><h3>Written estimate, your approval</h3><p>An itemised estimate on WhatsApp before we start. Anything new we find gets a call first.</p></article>
+      <article class="principle reveal"><h3>Factory data, proper tools</h3><p>Manufacturer service data, torque wrenches, feeler gauges and micrometers. Clearances are measured and written down.</p></article>
+      <article class="principle reveal"><h3>Photos and video as we go</h3><p>See the worn pads, the out-of-spec valve and the old oil while the job happens.</p></article>
+      <article class="principle reveal"><h3>Branded parts, nothing grey</h3><p>Sealed packs from brands you know. Your old parts go back to you on request.</p></article>
+      <article class="principle reveal"><h3>Test ride and handover</h3><p>Every bike is test-ridden. We walk you through what we did and when it's due next.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>From oil changes to engine rebuilds.</h2>
+      <p class="lede">Periodic and major services, valve shims, suspension, ECU remaps, crash protection and detailing. <a href="/services">See every service</a>.</p>
+    </div>
+    <div class="service-grid">{{{services_overview}}}</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container class-split">
+    <div class="class-split__intro">
+      <h2 class="class-split__title">Himalayan 450 to ZX-10R.</h2>
+      <p class="lede">Labour is priced by class, because a twin takes less time than a V4. Find your bike to see its class.</p>
+      <div class="finder" data-finder>
+        <label class="field">
+          <span class="field__label">Your motorcycle</span>
+          <input class="input" type="search" list="bike-list" placeholder="Interceptor, Z900, S 1000 RR..." data-finder-input autocomplete="off">
+        </label>
+        <datalist id="bike-list"></datalist>
+        <p class="finder__out mono" data-finder-out aria-live="polite">Not listed? We probably still work on it. <a href="/contact">Ask us</a>.</p>
+        <script type="application/json" id="bike-data">{{{bike_finder_data}}}</script>
+      </div>
+    </div>
+    <ol class="class-rows">{{{class_rows}}}</ol>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Brands we fit</p>
+      <h2>Parts you can trust, in sealed packs.</h2>
+      <p class="lede">Oils, filters, brakes, exhausts and protection from brands riders already trust. Bringing your own parts? We'll fit them too.</p>
+    </div>
+    <div class="brand-grid">{{{brands}}}</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>Four steps. No surprises.</h2>
+    </div>
+    <ol class="steps" style="--steps:4">
+      <li class="step reveal"><h3>Tell us what it's doing</h3><p>WhatsApp a note, a video of the noise, or the km reading and last service date.</p></li>
+      <li class="step reveal"><h3>Inspect and estimate</h3><p>We look at the bike and send an itemised estimate: labour, parts and time.</p></li>
+      <li class="step reveal"><h3>Work, with updates</h3><p>Photos and video as the job progresses. Anything new gets a call before we touch it.</p></li>
+      <li class="step reveal"><h3>Test ride and handover</h3><p>Test-ridden, washed and handed over with a GST invoice and the next service date.</p></li>
+    </ol>
+  </div>
+</section>
+
+{{{portfolio_preview_section}}}
+
+<section class="section cta-band">
+  <div class="container cta-band__inner">
+    <div>
+      <h2 class="cta-band__title">Tell us the bike and what it's doing.</h2>
+      <p class="lede">We'll reply with what it needs and what it costs, before any work starts.</p>
+    </div>
+    <div class="cta-band__actions">
+      <a class="btn btn--primary btn--lg btn--block" href="{{wa_book}}" target="_blank" rel="noopener">{{{wa_icon}}} WhatsApp us</a>
+      <a class="btn btn--secondary btn--lg btn--block" href="tel:{{tel}}">Call {{biz.phone}}</a>
+      <p class="mono muted cta-band__hours">{{biz.hours}}</p>
+    </div>
+  </div>
+</section>

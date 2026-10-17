@@ -1,0 +1,138 @@
+<section class="page-hero">
+  <div class="container">
+    <p class="eyebrow">Design system · v1.0</p>
+    <h1 class="page-hero__title">Torqued to spec.</h1>
+    <p class="lede">Every colour, type size, space and component used across the site, admin and invoices. Source: <span class="mono">public/css/tokens.css</span> and <span class="mono">components.css</span>. Rationale: <span class="mono">DESIGN-SYSTEM.md</span>.</p>
+  </div>
+  <div class="ticks" aria-hidden="true"></div>
+</section>
+
+<div class="container">
+  <section class="ds-section">
+    <h2>Colour</h2>
+    <p>Dark-first workshop palette. Redline is the only accent: one primary action and one highlight per view. Heat-tint is decorative hairline only.</p>
+    <div class="ds-swatches">
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--ink-950)"></div><div class="ds-swatch__meta"><span>--bg / ink-950</span><span>#0a0b0d</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--ink-900)"></div><div class="ds-swatch__meta"><span>--surface</span><span>#101216</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--ink-850)"></div><div class="ds-swatch__meta"><span>--surface-2</span><span>#14171b</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--ink-800)"></div><div class="ds-swatch__meta"><span>--surface-3</span><span>#191c21</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--ink-700)"></div><div class="ds-swatch__meta"><span>--line</span><span>#22262d</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--ink-600)"></div><div class="ds-swatch__meta"><span>--line-strong</span><span>#2e333b</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--steel-400)"></div><div class="ds-swatch__meta"><span>--text-muted</span><span>#8b929d</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--steel-300)"></div><div class="ds-swatch__meta"><span>--text-soft</span><span>#a9afb8</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--bone-100)"></div><div class="ds-swatch__meta"><span>--text / bone-100</span><span>#eeeae2</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--redline-500)"></div><div class="ds-swatch__meta"><span>--accent / redline</span><span>#ff4f1a</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--redline-400)"></div><div class="ds-swatch__meta"><span>--accent-hover</span><span>#ff6a45</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch__chip" style="background:var(--heat-tint)"></div><div class="ds-swatch__meta"><span>--heat-tint</span><span>decorative only</span></div></div>
+    </div>
+    <h3 style="margin:var(--s-6) 0 var(--s-3)">Status (admin only)</h3>
+    <div class="ds-row"><span class="badge badge--ok">Paid</span><span class="badge badge--warn">Partial</span><span class="badge badge--danger">Unpaid</span><span class="badge badge--info">Estimate</span><span class="badge">Draft</span></div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Typography</h2>
+    <p>Archivo expanded (display), Instrument Sans (body/UI), JetBrains Mono (data, prices, km, part numbers).</p>
+    <div class="ds-type-row"><span>display-xl · 900 · 125%</span><div style="font-family:var(--font-display);font-stretch:125%;font-weight:900;font-size:var(--fs-display-xl);line-height:.94;letter-spacing:-.035em;text-transform:uppercase">Torqued</div></div>
+    <div class="ds-type-row"><span>display-l</span><div style="font-family:var(--font-display);font-stretch:125%;font-weight:900;font-size:var(--fs-display-l);line-height:.98;letter-spacing:-.03em">Measured.</div></div>
+    <div class="ds-type-row"><span>h1</span><h1>Valve clearance</h1></div>
+    <div class="ds-type-row"><span>h2</span><h2>Suspension service</h2></div>
+    <div class="ds-type-row"><span>h3</span><h3>Throttle body cleaning</h3></div>
+    <div class="ds-type-row"><span>lede</span><p class="lede">We find the fault before we replace anything.</p></div>
+    <div class="ds-type-row"><span>body</span><p>Every bike is test-ridden before handover. We walk you through what we did and when it's due next.</p></div>
+    <div class="ds-type-row"><span>mono · data</span><p class="mono num">₹1,23,456.00 · 12,400 km · 0.15 mm · TN/26-27/0042</p></div>
+    <div class="ds-type-row"><span>eyebrow</span><p class="eyebrow">Ratlam · 450cc and up</p></div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Space</h2>
+    <p>4px base. Section padding uses <span class="mono">--section-y</span> (64 → 128px fluid).</p>
+    <div class="ds-space"><span>--s-1 · 4</span><i style="width:var(--s-1)"></i></div>
+    <div class="ds-space"><span>--s-2 · 8</span><i style="width:var(--s-2)"></i></div>
+    <div class="ds-space"><span>--s-3 · 12</span><i style="width:var(--s-3)"></i></div>
+    <div class="ds-space"><span>--s-4 · 16</span><i style="width:var(--s-4)"></i></div>
+    <div class="ds-space"><span>--s-5 · 24</span><i style="width:var(--s-5)"></i></div>
+    <div class="ds-space"><span>--s-6 · 32</span><i style="width:var(--s-6)"></i></div>
+    <div class="ds-space"><span>--s-7 · 48</span><i style="width:var(--s-7)"></i></div>
+    <div class="ds-space"><span>--s-8 · 64</span><i style="width:var(--s-8)"></i></div>
+    <div class="ds-space"><span>--s-9 · 96</span><i style="width:var(--s-9)"></i></div>
+    <div class="ds-space"><span>--s-10 · 128</span><i style="width:var(--s-10)"></i></div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Signature: tick scale, readout & gauge</h2>
+    <p>The torque-wrench scale is the brand texture. The readout is how we present facts.</p>
+    <div class="ticks" style="margin-bottom:var(--s-6)"></div>
+    <div style="max-width:320px;margin-bottom:var(--s-6)">{{{gauge_demo}}}</div>
+    <div class="ds-grid-2">
+      <dl class="readout readout--panel">
+        <div class="readout__row"><dt>Interval</dt><dd>Every 12,000 km</dd></div>
+        <div class="readout__row"><dt>Time</dt><dd>1-2 days</dd></div>
+        <div class="readout__row"><dt>Class C</dt><dd>from ₹16,500</dd></div>
+      </dl>
+      <dl class="readout">
+        <div class="readout__row"><dt>Jobs</dt><dd>6</dd></div>
+        <div class="readout__row"><dt>Labour from</dt><dd>₹800</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Buttons</h2>
+    <p>One primary per view. 44px minimum hit target.</p>
+    <div class="ds-row">
+      <button class="btn btn--primary">Book a service</button>
+      <button class="btn btn--secondary">WhatsApp us</button>
+      <button class="btn">Default</button>
+      <button class="btn btn--ghost">Ghost →</button>
+      <button class="btn btn--danger">Delete</button>
+      <button class="btn btn--primary" disabled>Disabled</button>
+    </div>
+    <div class="ds-row">
+      <button class="btn btn--primary btn--lg">Large</button>
+      <button class="btn btn--secondary btn--sm">Small</button>
+      <span class="chip">Chip</span><button class="chip" aria-pressed="true">Selected chip</button>
+    </div>
+    <div class="segmented" role="group" aria-label="Example"><button aria-pressed="true">Class A</button><button aria-pressed="false">Class B</button><button aria-pressed="false">Class C</button></div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Forms</h2>
+    <p>Labels always visible. Inputs 44px tall. Numbers right-aligned in mono.</p>
+    <div class="form-grid form-grid--3" style="max-width:900px">
+      <div class="field"><label for="ds1">Customer name</label><input class="input" id="ds1" placeholder="Name"></div>
+      <div class="field"><label for="ds2">Bike class</label><select class="select" id="ds2"><option>Class A</option><option>Class B</option></select></div>
+      <div class="field"><label for="ds3">Rate (₹)</label><input class="input input--num" id="ds3" value="4,500"></div>
+      <div class="field"><label for="ds4">Phone</label><input class="input" id="ds4" aria-invalid="true" value="12"><span class="field__error">Enter a valid phone number</span></div>
+      <div class="field span-all"><label for="ds5">Notes</label><textarea class="textarea" id="ds5"></textarea><span class="field__hint">Shown on the invoice.</span></div>
+      <label class="check"><input type="checkbox" checked> GST invoice</label>
+    </div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Cards</h2>
+    <div class="service-grid">
+      <a class="service-card" href="#"><div class="service-card__top"><h3>Service card</h3><span class="service-card__arrow">→</span></div><p>Title, summary, readout. No index numbers.</p><dl class="readout"><div class="readout__row"><dt>Labour from</dt><dd>₹1,800</dd></div></dl></a>
+      <div class="card"><h3 class="card__title">Card</h3><p class="muted">Border, no shadow. Surface colour.</p></div>
+      <div class="stat"><div class="stat__label">This month</div><div class="stat__value">₹2,48,900</div><div class="stat__sub">31 invoices</div></div>
+    </div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Brand tiles</h2>
+    <p>Monochrome until hover. Uploaded logo or typographic fallback.</p>
+    <div class="brand-grid" style="max-width:640px"><div class="brand-tile"><span class="brand-tile__word">Brand</span><span class="brand-tile__cat">Category</span></div><div class="brand-tile"><span class="brand-tile__word">Wordmark</span><span class="brand-tile__cat">Fallback</span></div><div class="brand-tile"><img src="/img/mark.svg" alt="Logo example"><span class="brand-tile__cat">With logo</span></div></div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Table & alerts</h2>
+    <div class="table-wrap" style="margin-bottom:var(--s-5)"><table class="table"><thead><tr><th>No.</th><th>Customer</th><th>Status</th><th class="r">Total</th></tr></thead>
+      <tbody><tr><td class="mono">TN/26-27/0001</td><td>Customer</td><td><span class="badge badge--ok">Paid</span></td><td class="money">₹12,450.00</td></tr>
+      <tr><td class="mono">TN/26-27/0002</td><td>Customer</td><td><span class="badge badge--danger">Unpaid</span></td><td class="money">₹4,130.00</td></tr></tbody></table></div>
+    <div class="stack"><div class="alert">Neutral alert</div><div class="alert alert--ok">Saved.</div><div class="alert alert--warn">Prices are indicative. Review before going live.</div><div class="alert alert--danger">Could not save.</div></div>
+  </section>
+
+  <section class="ds-section">
+    <h2>Steps</h2>
+    <ol class="steps" style="--steps:3"><li class="step"><h3>Tell us</h3><p>What the bike is doing.</p></li><li class="step"><h3>Estimate</h3><p>Approved by you.</p></li><li class="step"><h3>Handover</h3><p>Test-ridden.</p></li></ol>
+  </section>
+</div>

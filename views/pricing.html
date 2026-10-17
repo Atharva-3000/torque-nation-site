@@ -1,0 +1,63 @@
+<section class="page-hero">
+  <div class="container page-hero__split">
+    <div>
+      <p class="eyebrow">Pricing</p>
+      <h1 class="page-hero__title">Published prices. No "call for rates".</h1>
+      <p class="lede">Labour rates by bike class. Parts are billed at MRP and listed separately on your estimate, so you can see exactly where the money goes.</p>
+    </div>
+    <dl class="readout readout--panel">
+      <div class="readout__row"><dt>Prices shown</dt><dd>Labour only</dd></div>
+      <div class="readout__row"><dt>Parts & oils</dt><dd>At MRP, itemised</dd></div>
+      <div class="readout__row"><dt>GST</dt><dd>Extra, as applicable</dd></div>
+      <div class="readout__row"><dt>Before work</dt><dd>Written estimate</dd></div>
+      <div class="readout__row"><dt>"From" prices</dt><dd>Final after inspection</dd></div>
+    </dl>
+  </div>
+  <div class="ticks" aria-hidden="true"></div>
+</section>
+
+<section class="section section--tight pricing" data-pricing>
+  <div class="container">
+    <div class="pricing__controls">
+      <div class="finder" data-finder>
+        <label class="field">
+          <span class="field__label">Find your bike</span>
+          <input class="input" type="search" list="bike-list" placeholder="e.g. Himalayan 450, Z900, ZX-10R" data-finder-input autocomplete="off">
+        </label>
+        <datalist id="bike-list"></datalist>
+        <p class="finder__out mono" data-finder-out aria-live="polite">Or pick a class.</p>
+        <script type="application/json" id="bike-data">{{{bike_finder_data}}}</script>
+      </div>
+      {{{class_switch}}}
+    </div>
+
+    <div class="pricing__tables">
+      {{{pricing_tables}}}
+    </div>
+
+    {{{faq_html}}}
+
+    <div class="pricing__notes">
+      <h2 class="h3">The small print, in plain words</h2>
+      <ul class="ticklist">
+        <li>Prices are workshop labour. Engine oil, filters, shims, gaskets, pads and other parts are extra and shown line by line.</li>
+        <li>"from" means the job varies by model. For example, shim work on an inline-four takes longer than on a twin. You get the exact figure on your estimate.</li>
+        <li>"On quote" jobs, such as engine rebuilds and ECU remaps, depend on what we find or on the partner tuner's fee. We quote them after inspection.</li>
+        <li>Seized or damaged fasteners, rust, or previous bad repairs can add time. We'll call you before doing anything that changes the estimate.</li>
+        <li>Bring your own parts? We'll fit them at the same labour rate. Workmanship warranty covers our work, not the part.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section cta-band">
+  <div class="container cta-band__inner">
+    <div>
+      <h2 class="cta-band__title">Send the bike, the km and what it needs.</h2>
+    </div>
+    <div class="cta-band__actions">
+      <a class="btn btn--primary btn--lg btn--block" href="{{wa_book}}" target="_blank" rel="noopener">{{{wa_icon}}} WhatsApp us</a>
+      <a class="btn btn--secondary btn--lg btn--block" href="/contact#book">Book a service</a>
+    </div>
+  </div>
+</section>

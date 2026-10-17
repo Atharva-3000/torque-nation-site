@@ -1,0 +1,49 @@
+<section class="page-hero">
+  <div class="container">
+    <p class="eyebrow">Contact</p>
+    <h1 class="page-hero__title">Book a service.</h1>
+    <p class="lede">WhatsApp is fastest. Send the bike, the km reading and what it's doing. Or fill in the form and we'll call you back the same working day.</p>
+  </div>
+  <div class="ticks" aria-hidden="true"></div>
+</section>
+
+<section class="section section--tight">
+  <div class="container contact-grid">
+    <form class="card contact-form" id="book" data-booking novalidate>
+      <h2 class="h3">Request a slot</h2>
+      <div class="form-grid form-grid--2">
+        <div class="field"><label for="b-name">Your name</label><input class="input" id="b-name" name="name" autocomplete="name" required></div>
+        <div class="field"><label for="b-phone">Phone / WhatsApp</label><input class="input" id="b-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="98xxxxxxxx"></div>
+        <div class="field"><label for="b-bike">Motorcycle</label><input class="input" id="b-bike" name="bike" list="bike-list" placeholder="e.g. Kawasaki Z900, 2022"></div>
+        <div class="field"><label for="b-date">Preferred date</label><input class="input" id="b-date" name="preferred_date" type="date"></div>
+        <div class="field span-all"><label for="b-service">What do you need?</label>
+          <select class="select" id="b-service" name="service"><option value="">Choose a service</option>{{{service_options}}}</select></div>
+        <div class="field span-all"><label for="b-msg">Anything else?</label><textarea class="textarea" id="b-msg" name="message" placeholder="Km reading, last service, noises, warning lights"></textarea></div>
+        <div class="hp-field" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+      </div>
+      <datalist id="bike-list"></datalist>
+      <script type="application/json" id="bike-data">{{{bike_finder_data}}}</script>
+      <div class="contact-form__foot">
+        <button class="btn btn--primary btn--lg" type="submit">Send request</button>
+        <p class="field__hint" data-booking-status role="status" aria-live="polite">We'll call or WhatsApp to confirm. Nothing is booked until we do.</p>
+      </div>
+    </form>
+
+    <aside class="contact-side">
+      <div class="contact-side__block">
+        <a class="btn btn--primary btn--lg btn--block" href="{{wa_book}}" target="_blank" rel="noopener">{{{wa_icon}}} WhatsApp us</a>
+        <a class="btn btn--secondary btn--lg btn--block" href="tel:{{tel}}">Call {{biz.phone}}</a>
+      </div>
+      <dl class="readout readout--panel">
+        <div class="readout__row"><dt>Hours</dt><dd>{{biz.hours}}</dd></div>
+        <div class="readout__row"><dt>City</dt><dd>{{biz.city}}, MP</dd></div>
+        <div class="readout__row"><dt>Pick-up</dt><dd>Within Ratlam</dd></div>
+        <div class="readout__row"><dt>Flatbed</dt><dd>Indore and Ujjain, on quote</dd></div>
+      </dl>
+      <div class="contact-side__block">
+        <address class="soft">{{{address_html}}}</address>
+        {{{maps_link}}}
+      </div>
+    </aside>
+  </div>
+</section>

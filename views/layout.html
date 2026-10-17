@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en-IN" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{seo.title}}</title>
+  <meta name="description" content="{{page.description}}">
+  {{{seo.robots}}}
+  <link rel="canonical" href="{{seo.canonical}}">
+  <meta name="theme-color" content="#0a0b0d">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_IN">
+  <meta property="og:site_name" content="{{biz.name}}">
+  <meta property="og:title" content="{{seo.title}}">
+  <meta property="og:description" content="{{page.description}}">
+  <meta property="og:url" content="{{seo.canonical}}">
+  {{{seo.og_image}}}
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/img/mark.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  {{{seo.preload}}}
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <script>document.documentElement.classList.remove('no-js')</script>
+  <script type="application/ld+json">{{{jsonld}}}</script>
+</head>
+<body class="page-{{page.nav}}">
+  <a class="skip-link" href="#main">Skip to content</a>
+  {{> header}}
+  <main id="main">
+    {{{body}}}
+  </main>
+  {{> footer}}
+  <script src="/js/site.js" defer></script>
+</body>
+</html>

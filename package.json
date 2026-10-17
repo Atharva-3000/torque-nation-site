@@ -1,0 +1,13 @@
+{
+  "name": "torque-nation-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Torque Nation, a premium superbike workshop in Ratlam: website, admin panel and invoice generator.",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "NODE_ENV=production node --disable-warning=ExperimentalWarning server.js",
+    "dev": "node --watch --disable-warning=ExperimentalWarning server.js",
+    "reset-password": "node --disable-warning=ExperimentalWarning scripts/reset-password.js"
+  }
+}

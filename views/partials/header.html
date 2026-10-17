@@ -1,0 +1,23 @@
+<header class="site-header" data-header>
+  <div class="container site-header__inner">
+    <a class="logo" href="/" aria-label="{{biz.name}} home">
+      <img src="/img/mark.svg" alt="" width="32" height="32">
+      <span class="logo__word">TORQUE<b>NATION</b></span>
+    </a>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="/services" {{{nav_services}}}>Services</a></li>
+        <li><a href="/pricing" {{{nav_pricing}}}>Pricing</a></li>
+        <li><a href="/work" {{{nav_work}}}>Our work</a></li>
+        <li><a href="/contact" {{{nav_contact}}}>Contact</a></li>
+      </ul>
+      <div class="nav__cta">
+        <a class="btn btn--secondary btn--sm" href="{{wa}}" target="_blank" rel="noopener">{{{wa_icon}}} WhatsApp us</a>
+        <a class="btn btn--primary btn--sm" href="/contact#book">Book a service</a>
+      </div>
+    </nav>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
+      <span class="visually-hidden">Menu</span><span class="nav-toggle__bars" aria-hidden="true"></span>
+    </button>
+  </div>
+</header>

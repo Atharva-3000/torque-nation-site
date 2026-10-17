@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Admin · Torque Nation</title>
+  <link rel="icon" href="/img/mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/site.css"><link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin">
+  <div class="admin-shell">
+    <header class="admin-top">
+      <button class="btn btn--icon btn--secondary" type="button" data-side-toggle aria-label="Open menu">☰</button>
+      <a class="logo" href="#/"><img src="/img/mark.svg" alt="" width="28" height="28"><span class="logo__word">TORQUE<b>NATION</b></span></a>
+      <a class="btn btn--primary btn--sm" href="#/documents/new?type=invoice">+ Invoice</a>
+    </header>
+    <aside class="admin-side" data-side>
+      <a class="logo" href="#/"><img src="/img/mark.svg" alt="" width="28" height="28"><span class="logo__word">TORQUE<b>NATION</b></span></a>
+      <div class="admin-side__new">
+        <a class="btn btn--primary btn--block" href="#/documents/new?type=invoice">+ New invoice</a>
+        <a class="btn btn--secondary btn--block" href="#/documents/new?type=estimate">+ New estimate</a>
+      </div>
+      <nav class="admin-nav" aria-label="Admin">
+        <a href="#/" data-route="">Dashboard</a>
+        <a href="#/documents" data-route="documents">Invoices &amp; estimates</a>
+        <a href="#/bookings" data-route="bookings">Booking requests <span class="count" data-new-bookings hidden></span></a>
+        <div class="admin-nav__label">Website</div>
+        <a href="#/rates" data-route="rates">Rate card</a>
+        <a href="#/brands" data-route="brands">Brands we fit</a>
+        <a href="#/portfolio" data-route="portfolio">Portfolio</a>
+        <div class="admin-nav__label">Setup</div>
+        <a href="#/bikes" data-route="bikes">Bike models</a>
+        <a href="#/parts" data-route="parts">Parts list</a>
+        <a href="#/settings" data-route="settings">Business settings</a>
+      </nav>
+      <div class="admin-side__foot">
+        <a class="muted" href="/" target="_blank" rel="noopener">View website ↗</a>
+        <a class="muted" href="/design-system" target="_blank" rel="noopener">Design system ↗</a>
+        <button class="btn btn--ghost btn--sm" type="button" data-logout style="justify-content:flex-start">Sign out</button>
+      </div>
+    </aside>
+    <main class="admin-main" id="view" tabindex="-1"></main>
+  </div>
+  <dialog class="modal" id="modal"><div class="modal__panel"></div></dialog>
+  <div class="toast-region" id="toasts" aria-live="polite"></div>
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>

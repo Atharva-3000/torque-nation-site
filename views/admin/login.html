@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Staff sign-in · Torque Nation</title>
+  <link rel="icon" href="/img/mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/site.css"><link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin">
+  <main class="login">
+    <div class="login__card">
+      <a class="logo" href="/"><img src="/img/mark.svg" alt="" width="32" height="32"><span class="logo__word">TORQUE<b>NATION</b></span></a>
+      <p class="eyebrow">Workshop admin</p>
+      <h1>Sign in</h1>
+      <form id="login" novalidate>
+        <div class="field"><label for="u">Username</label><input class="input" id="u" name="username" autocomplete="username" required autofocus></div>
+        <div class="field"><label for="p">Password</label><input class="input" id="p" name="password" type="password" autocomplete="current-password" required></div>
+        <p class="field__error" id="err" role="alert" hidden></p>
+        <button class="btn btn--primary btn--lg btn--block" type="submit">Sign in</button>
+      </form>
+    </div>
+  </main>
+  <script>
+    const f = document.getElementById('login'), err = document.getElementById('err');
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.hidden = true;
+      const btn = f.querySelector('button'); btn.disabled = true;
+      try {
+        const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(f))) });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || 'Sign-in failed');
+        location.href = '/admin';
+      } catch (x) { err.textContent = x.message; err.hidden = false; btn.disabled = false; }
+    });
+  </script>
+</body>
+</html>
